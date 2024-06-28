@@ -269,7 +269,7 @@ class VideoCCAM(nn.Module):
         videos: list[list[Image.Image]] = None,
         pixel_values: torch.Tensor = None,
         return_pixel_values: bool = False
-    ) -> list[str] | tuple[list[str], torch.Tensor]:
+    ) -> list[str]:
         """Genrate respoonse for video and text inputs.
 
         Args:

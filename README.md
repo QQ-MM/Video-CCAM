@@ -8,19 +8,19 @@
 
 ## Model Summary
 
-Video-CCAM is a lightweight flexible Video-MLLM developed by TencentQQ Multimedia Research Team.
+Video-CCAM is a flexible Video-MLLM developed by TencentQQ Multimedia Research Team.
 
 ## Usage
 
-Inference using Huggingface transformers on NVIDIA GPUs. Requirements tested on python 3.10：
+Inference using Huggingface transformers on NVIDIA GPUs. Requirements tested on python 3.9/3.10：
 ```
 torch==2.1.0
 torchvision==0.16.0
 transformers==4.40.2
 peft==0.10.0
-pyarrow==13.0.0     # load parquet
-decord==0.6.0       # load video
-pysubs2==1.7.2      # load subtitle
+pyarrow==13.0.0
+decord==0.6.0
+pysubs2==1.7.2
 ```
 
 ### Sample Inference Code
@@ -28,8 +28,8 @@ pysubs2==1.7.2      # load subtitle
 ```
 import torch
 
-from eval import load_video
-from videoccam import VideoCCAM
+from eval import load_decord
+from model import create_videoccam
 
 video_path = 'assets/example.mp4'
 question = 'Can you please describe what happens in the video in detail?'
@@ -39,35 +39,46 @@ sample_config = dict(
     num_frames=32
 )
 
-mllm = VideoCCAM(
-    model_path='.',
-    chat_template='<|user|>\n{input}<|end|>\n<|assistant|>\n',
-    generation_args=dict(
-        stop_tokens=['<|end|>', '<|endoftext|>'],
-        max_new_tokens=512,
-        do_sample=False,
-        num_beams=5,
-    ),
-    llm_name_or_path='microsoft/Phi-3-mini-4k-instruct',    # you can replace this with local directory if the model has been downloaded before
-    visual_encoder_name_or_path='google/siglip-so400m-patch14-384',     # you can replace this with local directory if the model has been downloaded before
-    special_tokens=['<time>', '</time>'],
-    visual_select_layer=-2,
-    torch_dtype=torch.bfloat16,
-    device_map='cuda:0'
+mllm = create_videoccam(
+    model_name='Video-CCAM-4B',
+    model_path='your/model/path>',
+    # llm_name_or_path='your/local/llm/path',                   # automatically download by default
+    # visual_encoder_name_or_path='your/local/siglip/path',     # automatically download by default
+    torch_dtype='bfloat16',
 )
 
-frames, = load_video(video_path, **sample_config)
+frames = load_decord(video_path, **sample_config)
 response = mllm.generate(texts=[question], videos=[frames])[0]
 
 print(response)
 ```
 
-### Video-MME Evaluation
+## Evaluation
 
-You are expected to reproduce the results by running the following command. By default, the results are saved as `output_w_sub.json` and `output_wo_sub.json` in local directory.
+### Video-MME
+
+* Video-CCAM-4B, 96 frames
 
 ```
-python eval.py
+python evaluate.py --model_name Video-CCAM-4B \
+    --model_path your/model/path \
+    --dtype bfloat16 \
+    --num_frames 96 \
+    --benchmark Video-MME \
+    --dataset_path your/video_mme/data/path \
+    --output_dir your/output_dir
+```
+
+* Video-CCAM-9B, 96 frames
+
+```
+python evaluate.py --model_name Video-CCAM-9B \
+    --model_path your/model/path \
+    --dtype bfloat16 \
+    --num_frames 96 \
+    --benchmark Video-MME \
+    --dataset_path your/video_mme/data/path \
+    --output_dir your/output_dir
 ```
 
 ![title](assets/videomme_leaderboard_20240624.png)
@@ -75,6 +86,7 @@ python eval.py
 ## Acknowledgement
 
 * [xtuner](https://github.com/InternLM/xtuner): Video-CCAM-4B is trained using the xtuner framework. Thanks for their excellent works!
-* [Phi-3-Mini-4K-Instruct](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct): Great small language models developed by Microsoft.
+* [Phi-3-Mini-4K-Instruct](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct): Powerful language models developed by Microsoft.
+* [Yi-1.5-9B-Chat](https://huggingface.co/01-ai/Yi-1.5-9B-Chat): Powerful language models developed by [01.AI](https://www.lingyiwanwu.com/).
 * [SigLIP SO400M](https://huggingface.co/google/siglip-so400m-patch14-384): Outstanding vision encoder developed by Google.
 
