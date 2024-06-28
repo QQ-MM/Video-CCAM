@@ -10,4 +10,4 @@
 """
 
 from .utils import video_collate_fn, load_decord
-from .datasets import VideoMMEDataset
+from .datasets import VideoMMEDataset, MVBenchDataset

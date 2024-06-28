@@ -77,6 +77,43 @@ def fps_indices(input_fps: float, total_frames: int, output_fps: float = None, m
     return indices
 
 
+def get_avg_fps_gif(src_path: str, im: Image.Image = None, default_fps: int = 20) -> float:
+    """Get average fps for gif
+
+    Args:
+        src_path (str): gif path
+        im (Image.Image, optional): gif Image object from src_path. Defaults to None.
+        default_fps (int, optional): default fps if no duration is read. Defaults to 20.
+
+    Returns:
+        float: average fps
+    """
+    count, duration = 0, 0
+
+    # if Image object is not provided, load it from src_path
+    if image_flag := im is None:
+        im = Image.open(src_path)
+
+    for i in range(im.n_frames):
+        try:
+            im.seek(i)
+            duration += im.info['duration']     # some frame do not have duration
+            count += 1
+        except:
+            pass
+    if count == 0:
+        print(f'No duration is got from {src_path}, use default value as {default_fps}')
+        fps = default_fps
+    else:
+        fps = 1000 * count / duration
+
+    # only close object is opened by this function
+    if image_flag:
+        im.close()
+
+    return fps
+
+
 def load_subtitle(sub_path: str, indices: list[int], fps: float) -> str:
     """Load subtitle related to given indices
 
