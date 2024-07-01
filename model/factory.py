@@ -23,7 +23,7 @@ def _create_videoccam(
     visual_encoder_name_or_path: str,
     max_new_tokens: int = 512,
     do_sample: bool = False,
-    special_tokens: list[str] = ['<time>', '</time>'],
+    special_tokens: list[str] = None,
     visual_select_layer: int = -2,
     torch_dtype: torch.dtype = torch.bfloat16,
     device: str = 'cuda:0'
