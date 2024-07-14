@@ -34,7 +34,7 @@ from eval import load_decord
 from model import create_videoccam
 
 video_path = 'assets/example.mp4'
-question = 'Can you please describe what happens in the video in detail?'
+question = '<video>\nCan you please describe what happens in the video in detail?'
 
 sample_config = dict(
     sample_type='uniform',
