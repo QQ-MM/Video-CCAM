@@ -10,7 +10,7 @@
 
 ## Model Summary
 
-Video-CCAM is a flexible Video-MLLM developed by TencentQQ Multimedia Research Team.
+Video-CCAM is a series of flexible Video-MLLMs developed by TencentQQ Multimedia Research Team.
 
 ## Usage
 
