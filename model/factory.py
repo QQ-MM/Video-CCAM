@@ -5,7 +5,7 @@
 @author: Jaron
 @time: 2024/06/28 15:14:43
 @email: fjjth98@163.com
-@description: 
+@description:
 ================================================
 """
 
@@ -17,7 +17,7 @@ from .videoccam import VideoCCAM
 
 def _create_videoccam(
     model_path: str,
-    llm_name_or_path: str, 
+    llm_name_or_path: str,
     chat_template: str,
     stop_words: list[str],
     visual_encoder_name_or_path: str,
@@ -51,7 +51,7 @@ def _create_videoccam(
 
 
 def create_videoccam(model_name: str = None, **kwargs) -> VideoCCAM:
-    
+
     if model_name is None:
         model_name = osp.split(kwargs['model_path'])
         print(f'Guess `model_name` as {model_name}')
@@ -68,7 +68,13 @@ def create_videoccam(model_name: str = None, **kwargs) -> VideoCCAM:
         if kwargs.get('llm_name_or_path') is None:
             kwargs['llm_name_or_path'] = '01-ai/Yi-1.5-9B-Chat'
         mllm = _create_videoccam(**kwargs)
+    elif model_name == 'Video-CCAM-14B':
+        kwargs['chat_template'] = '<|user|>\n{input}<|end|>\n<|assistant|>\n'
+        kwargs['stop_words'] = ['<|end|>', '<|endoftext|>']
+        if kwargs.get('llm_name_or_path') is None:
+            kwargs['llm_name_or_path'] = 'microsoft/Phi-3-medium-4k-instruct'
+        mllm = _create_videoccam(**kwargs)
     else:
-        raise NotImplementedError(f'Do not support {model_name}, currently only support ["Video-CCAM-4B", "Video-CCAM-9B"]')
+        raise NotImplementedError(f'Do not support {model_name}, currently only support ["Video-CCAM-4B", "Video-CCAM-9B", "Video-CCAM-14B"]')
 
     return mllm
