@@ -73,19 +73,21 @@ python evaluate.py --model_name Video-CCAM-4B \
     --output_dir your/output_dir
 ```
 
-* Video-CCAM-9B, 96 frames
+![title](assets/videomme_leaderboard_20240716.png)
+
+### MVBench
+
+* Video-CCAM-9B, 16 frames
 
 ```
 python evaluate.py --model_name Video-CCAM-9B \
     --model_path your/model/path \
     --dtype bfloat16 \
-    --num_frames 96 \
-    --benchmark Video-MME \
+    --num_frames 16 \
+    --benchmark MVBench \
     --dataset_path your/video_mme/data/path \
     --output_dir your/output_dir
 ```
-
-![title](assets/videomme_leaderboard_20240628.png)
 
 ## Acknowledgement
 
