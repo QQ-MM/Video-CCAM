@@ -15,6 +15,7 @@ import torch.nn as nn
 
 from PIL import Image
 from peft import PeftModel
+from transformers.pytorch_utils import apply_chunking_to_forward
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, SiglipVisionModel, SiglipImageProcessor
 
 
@@ -36,7 +37,8 @@ class VideoCCAM(nn.Module):
         special_tokens: list[str] = None,
         visual_select_layer: int = -2,
         torch_dtype: torch.dtype = torch.float16,
-        device_map: str = 'cuda:0'
+        device_map: str = 'cuda:0',
+        vision_chunk_size: int = 0      # this parameter controls the forward size of vision encoder, reducing the VRAM requirements
     ):
         super().__init__()
         self.chat_template = chat_template
@@ -44,6 +46,7 @@ class VideoCCAM(nn.Module):
         self.visual_select_layer = visual_select_layer
         self.torch_dtype = torch_dtype
         self.device_map = device_map
+        self.vision_chunk_size = vision_chunk_size
 
         if llm_name_or_path is None:
             llm_name_or_path = model_path
@@ -55,13 +58,12 @@ class VideoCCAM(nn.Module):
 
         self.llm = AutoModelForCausalLM.from_pretrained(
             llm_name_or_path,
-            trust_remote_code=True,
+            attn_implementation='flash_attention_2',
             torch_dtype=torch_dtype,
             device_map=device_map
         )
         self.tokenizer = AutoTokenizer.from_pretrained(
-            llm_name_or_path,
-            trust_remote_code=True
+            llm_name_or_path
         )
         print(f'Load LLM from {llm_name_or_path}')
         if special_tokens is not None:
@@ -93,6 +95,9 @@ class VideoCCAM(nn.Module):
             trust_remote_code=True
         )
         print(f'Load projector from {projector_path}')
+
+    def forward_vision(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        return self.visual_encoder(pixel_values, output_hidden_states=True).hidden_states[self.visual_select_layer]
 
     # Modified from https://github.com/InternLM/xtuner/blob/main/xtuner/model/utils.py#L138
     def prepare_inputs_labels_for_multimodal(
@@ -288,8 +293,8 @@ class VideoCCAM(nn.Module):
             for i in videos:
                 frames += i
                 split_sizes.append(len(i))
-            pixel_values = self.image_processor(frames, return_tensors='pt')['pixel_values'].to(self.torch_dtype).to(self.device_map)
-            pixel_values = self.visual_encoder(pixel_values, output_hidden_states=True).hidden_states[self.visual_select_layer]
+            pixel_values = self.image_processor(frames, return_tensors='pt')['pixel_values'].to(dtype=self.torch_dtype, device=self.device_map)
+            pixel_values = apply_chunking_to_forward(self.forward_vision, self.vision_chunk_size, 0, pixel_values)
             pixel_values = self.projector(pixel_values, split_sizes)
 
         for i, t in enumerate(texts):

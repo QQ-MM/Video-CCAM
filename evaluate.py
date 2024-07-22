@@ -19,8 +19,8 @@ from copy import deepcopy
 from argparse import ArgumentParser
 from torch.utils.data import DataLoader
 
-from eval import video_collate_fn, VideoMMEDataset, MVBenchDataset
 from model import create_videoccam, DEFAULT_VIDEO_TOKEN, VideoCCAM
+from eval import video_collate_fn, VideoMMEDataset, MVBenchDataset, MLVUDataset
 
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
@@ -35,9 +35,10 @@ def parse_args():
     parser.add_argument('--dtype', type=str, default='bfloat16', help='Model data type, only support `float32`, `float16`, and `bfloat16`')
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_frames', type=int, default=32)
-    parser.add_argument('--benchmark', type=str, choices=['Video-MME', 'MVBench'], help='Supported benchmarks')
+    parser.add_argument('--benchmark', type=str, choices=['Video-MME', 'MVBench', 'MLVU'], help='Supported benchmarks')
     parser.add_argument('--dataset_path', type=str, required=True)
     parser.add_argument('--output_dir', type=str, required=True)
+    parser.add_argument('--vision_chunk_size', type=int, default=0)
 
     return parser.parse_args()
 
@@ -150,6 +151,90 @@ def eval_mvbench(
         json.dump(accuracy, f, indent=4, ensure_ascii=False)
 
 
+@torch.inference_mode
+def eval_mlvu(
+    mllm: VideoCCAM,
+    dataset_path: str,
+    output_dir: str,
+    sample_config: dict,
+    batch_size: int = 4
+):
+    if not osp.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Multiple choice
+    dataset = MLVUDataset(
+        dataset_path=dataset_path,
+        task_name='M',
+        sample_config=sample_config
+    )
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        num_workers=8,
+        shuffle=False,
+        pin_memory=True,
+        collate_fn=video_collate_fn
+    )
+    results = {k: [] for k in dataset._raw_data['M']}
+    for data in tqdm(dataloader):
+        response = mllm.generate(
+            texts=['\n'.join([DEFAULT_VIDEO_TOKEN, t, "Answer with the option's letter from the given choices directly."]) for t in data['question']],
+            videos=data['video']
+        )
+        for answer, task_type, predict in zip(data['answer'], data['task_type'], response):
+            results[task_type].append(dict(
+                predict=predict,
+                answer=answer,
+                correct=dataset.check_answer(predict, answer)
+            ))
+    with open(osp.join(output_dir, 'choice_results.json'), 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)
+    # Get accuracy
+    accuracy, correct_count, total_count = {}, 0, 0
+    for k, v in results.items():
+        correct = len(list(filter(lambda x: x['correct'], v)))
+        total = len(v)
+        accuracy[k] = round(correct / total * 100, 2)
+        correct_count += correct
+        total_count += total
+    accuracy['Avg'] = round(correct_count / total_count * 100 + 1e-5, 2)    # correct rounding 55.125 -> 55.13
+    print(f'Total accuracy: {accuracy["Avg"]}%')
+    with open(osp.join(output_dir, 'choice_leaderboard.json'), 'w') as f:
+        json.dump(accuracy, f, indent=4, ensure_ascii=False)
+
+    # Generation
+    dataset = MLVUDataset(
+        dataset_path=dataset_path,
+        task_name='G',
+        sample_config=sample_config
+    )
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        num_workers=8,
+        shuffle=False,
+        pin_memory=True,
+        collate_fn=video_collate_fn
+    )
+    results = {k: [] for k in dataset._raw_data['G']}
+    for data in tqdm(dataloader):
+        response = mllm.generate(
+            texts=['\n'.join([DEFAULT_VIDEO_TOKEN, t]) for t in data['question']],
+            videos=data['video']
+        )
+        for video_name, question, answer, predict, task_type in zip(data['video_name'], data['question'], data['answer'], response, data['task_type']):
+            results[task_type].append(dict(
+                video_name=video_name,
+                Q=question,
+                A=answer,
+                pred=predict
+            ))
+        for task_type, results in results.items():
+            with open(osp.join(output_dir, f'generation_{task_type}_results.json'), 'w') as f:
+                json.dump(results, f, indent=4, ensure_ascii=False)
+
+
 if __name__ == '__main__':
 
     args = parse_args()
@@ -159,7 +244,8 @@ if __name__ == '__main__':
         model_path=args.model_path,
         llm_name_or_path=args.llm_name_or_path,
         visual_encoder_name_or_path=args.visual_encoder_name_or_path,
-        torch_dtype=eval('torch.' + args.dtype)
+        torch_dtype=eval('torch.' + args.dtype),
+        vision_chunk_size=args.vision_chunk_size
     )
 
     sample_config=dict(
@@ -173,7 +259,7 @@ if __name__ == '__main__':
             dataset_path=args.dataset_path,
             output_dir=args.output_dir,
             sample_config=sample_config,
-            batch_size=args.batch_size,
+            batch_size=args.batch_size
         )
     elif args.benchmark == 'MVBench':
         eval_mvbench(
@@ -181,5 +267,14 @@ if __name__ == '__main__':
             dataset_path=args.dataset_path,
             output_dir=args.output_dir,
             sample_config=sample_config,
-            batch_size=args.batch_size,
+            batch_size=args.batch_size
         )
+    elif args.benchmark == 'MLVU':
+        eval_mlvu(
+            mllm=mllm,
+            dataset_path=args.dataset_path,
+            output_dir=args.output_dir,
+            sample_config=sample_config,
+            batch_size=args.batch_size
+        )
+        

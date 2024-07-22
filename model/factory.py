@@ -26,7 +26,8 @@ def _create_videoccam(
     special_tokens: list[str] = None,
     visual_select_layer: int = -2,
     torch_dtype: torch.dtype = torch.bfloat16,
-    device: str = 'cuda:0'
+    device: str = 'cuda:0',
+    vision_chunk_size: int = 0,
 ) -> VideoCCAM:
     if isinstance(torch_dtype, str):
         torch_dtype = eval('torch.' + torch_dtype)
@@ -44,7 +45,8 @@ def _create_videoccam(
         special_tokens=special_tokens,
         visual_select_layer=visual_select_layer,
         torch_dtype=torch_dtype,
-        device_map=device
+        device_map=device,
+        vision_chunk_size=vision_chunk_size
     )
 
     return mllm.eval()

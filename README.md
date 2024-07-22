@@ -2,6 +2,8 @@
 
 ## Updates
 
+- **2024/07/22** Support [MLVU](https://github.com/JUNJIE99/MLVU) evaluation. With 96 frames, [Video-CCAM-14B](https://huggingface.co/JaronTHU/Video-CCAM-14B) achieves M-Avg as 60.18 and G-Avg as 4.11. Besides, Video-CCAM models are evaluated on [VideoVista](https://videovista.github.io/), ranking 2nd and 3rd among all open-source MLLMs.
+
 - **2024/07/16**: [Video-CCAM-14B](https://huggingface.co/JaronTHU/Video-CCAM-14B) is released, which achieves 53.2 (without subtitles) and 57.4 (with subtitles) [96 frames] on the challenging [Video-MME](https://video-mme.github.io/home_page.html) benchmark. With 16 frames, it achieves 61.43.
 
 - **2024/06/29**: Support [MVBench](https://github.com/OpenGVLab/Ask-Anything/blob/main/video_chat2/MVBENCH.md) evaluation. With 16 frames, [Video-CCAM-4B](https://huggingface.co/JaronTHU/Video-CCAM-4B) achieves 57.78, while [Video-CCAM-9B](https://huggingface.co/JaronTHU/Video-CCAM-9B) achieves 60.70.
@@ -85,6 +87,20 @@ python evaluate.py --model_name Video-CCAM-9B \
     --dtype bfloat16 \
     --num_frames 16 \
     --benchmark MVBench \
+    --dataset_path your/video_mme/data/path \
+    --output_dir your/output_dir
+```
+
+### MLVU
+
+* Video-CCAM-14B, 96 frames
+
+```
+python evaluate.py --model_name Video-CCAM-14B \
+    --model_path your/model/path \
+    --dtype bfloat16 \
+    --num_frames 96 \
+    --benchmark MLVU \
     --dataset_path your/video_mme/data/path \
     --output_dir your/output_dir
 ```
