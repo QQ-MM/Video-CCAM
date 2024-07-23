@@ -230,9 +230,9 @@ def eval_mlvu(
                 A=answer,
                 pred=predict
             ))
-        for task_type, results in results.items():
-            with open(osp.join(output_dir, f'generation_{task_type}_results.json'), 'w') as f:
-                json.dump(results, f, indent=4, ensure_ascii=False)
+    for task_type, results in results.items():
+        with open(osp.join(output_dir, f'generation_{task_type}_results.json'), 'w') as f:
+            json.dump(results, f, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':
