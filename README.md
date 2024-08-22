@@ -1,6 +1,8 @@
-# Video-CCAM: Advancing Video-Language Understanding with Causal Cross-Attention Masks
+# Video-CCAM: Enhancing Video-Language Understanding with Causal Cross-Attention Masks for Short and Long Videos
 
 ## Updates
+
+- **2024/08/22** Video-CCAM-v1.1 comes out. Support [VideoVista](https://videovista.github.io/) evaluation. The technical report is coming soon.
 
 - **2024/07/22** Support [MLVU](https://github.com/JUNJIE99/MLVU) evaluation. With 96 frames, [Video-CCAM-14B](https://huggingface.co/JaronTHU/Video-CCAM-14B) achieves M-Avg as 60.18 and G-Avg as 4.11. Besides, Video-CCAM models are evaluated on [VideoVista](https://videovista.github.io/), ranking 2nd and 3rd among all open-source MLLMs.
 
@@ -20,90 +22,10 @@ Video-CCAM is a series of flexible Video-MLLMs developed by TencentQQ Multimedia
 
 Inference using Huggingface transformers on NVIDIA GPUs. Requirements tested on python 3.9/3.10：
 ```
-torch==2.1.0
-torchvision==0.16.0
-transformers==4.40.2
-peft==0.10.0
-pyarrow==13.0.0
-decord==0.6.0
-pysubs2==1.7.2
+pip install -U pip torch transformers peft decord pysubs2 imageio
 ```
 
-### Sample Inference Code
-
-```
-import torch
-
-from eval import load_decord
-from model import create_videoccam
-
-video_path = 'assets/example.mp4'
-question = '<video>\nCan you please describe what happens in the video in detail?'
-
-sample_config = dict(
-    sample_type='uniform',
-    num_frames=32
-)
-
-mllm = create_videoccam(
-    model_name='Video-CCAM-4B',
-    model_path='your/model/path>',
-    # llm_name_or_path='your/local/llm/path',                   # automatically download by default
-    # visual_encoder_name_or_path='your/local/siglip/path',     # automatically download by default
-    torch_dtype='bfloat16',
-)
-
-frames = load_decord(video_path, **sample_config)
-response = mllm.generate(texts=[question], videos=[frames])[0]
-
-print(response)
-```
-
-## Evaluation
-
-### Video-MME
-
-* Video-CCAM-4B, 96 frames
-
-```
-python evaluate.py --model_name Video-CCAM-4B \
-    --model_path your/model/path \
-    --dtype bfloat16 \
-    --num_frames 96 \
-    --benchmark Video-MME \
-    --dataset_path your/video_mme/data/path \
-    --output_dir your/output_dir
-```
-
-![title](assets/videomme_leaderboard_20240716.png)
-
-### MVBench
-
-* Video-CCAM-9B, 16 frames
-
-```
-python evaluate.py --model_name Video-CCAM-9B \
-    --model_path your/model/path \
-    --dtype bfloat16 \
-    --num_frames 16 \
-    --benchmark MVBench \
-    --dataset_path your/video_mme/data/path \
-    --output_dir your/output_dir
-```
-
-### MLVU
-
-* Video-CCAM-14B, 96 frames
-
-```
-python evaluate.py --model_name Video-CCAM-14B \
-    --model_path your/model/path \
-    --dtype bfloat16 \
-    --num_frames 96 \
-    --benchmark MLVU \
-    --dataset_path your/video_mme/data/path \
-    --output_dir your/output_dir
-```
+Please refer to `tutorial.ipynb` for inference and evaluation.
 
 ## Acknowledgement
 
