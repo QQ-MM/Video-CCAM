@@ -1,6 +1,11 @@
 # Video-CCAM: Enhancing Video-Language Understanding with Causal Cross-Attention Masks for Short and Long Videos
 
+<a src="https://img.shields.io/badge/cs.CV-2305.06355-b31b1b?logo=arxiv&logoColor=red" href="https://arxiv.org/abs/2408.14023"> <img src="https://img.shields.io/badge/cs.CV-2408.14023-b31b1b?logo=arxiv&logoColor=red">
+</a>
+
 ## Updates
+
+- **2024/08/28** The technical report is released.
 
 - **2024/08/22** [Video-CCAM-v1.1](https://huggingface.co/collections/JaronTHU/video-ccam-v11-66c7325edd01a54c939df48b) comes out, with better performances than Video-CCAM in many benchmarks, especially in [MVBench](https://github.com/OpenGVLab/Ask-Anything/blob/main/video_chat2/MVBENCH.md), [VideoVista](https://videovista.github.io/), and [MLVU](https://github.com/JUNJIE99/MLVU). The technical report is coming soon. The source code is rewritten for simpler deployment. If you are interested in previous scripts, please refer to the `v1.0` release.
 
