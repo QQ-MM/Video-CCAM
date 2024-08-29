@@ -80,6 +80,24 @@ print(response)
 
 Please refer to `tutorial.ipynb` for more details.
 
+## Leaderboards
+
+### MVBench
+
+![MVBench](assets/mvbench_leaderboard_20240826.png)
+
+### VideoVista
+
+![VideoVista](assets/videovista_leaderboard_20240828.png)
+
+### MLVU
+
+![MLVU](assets/mlvu_leaderboard_20240829.png)
+
+### Video-MME
+
+![Video-MME](assets/videomme_leaderboard_20240716.png)
+
 ## Acknowledgement
 
 * [xtuner](https://github.com/InternLM/xtuner): Video-CCAM is trained using the xtuner framework. Thanks for their excellent works!
