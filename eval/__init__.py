@@ -8,10 +8,8 @@
 @description:
 ================================================
 """
-
-from .utils import load_decord
-
 from .mlvu import evaluate as evaluate_mlvu
 from .mvbench import evaluate as evaluate_mvbench
+from .utils import load_decord
 from .videomme import evaluate as evaluate_videomme
 from .videovista import evaluate as evaluate_videovista

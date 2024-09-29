@@ -8,17 +8,17 @@
 @description: Video-MME Evaluation
 ================================================
 """
-import os
 import json
-import torch
+import os
 import os.path as osp
-
-from tqdm import tqdm
 from copy import deepcopy
-from pandas import read_parquet
-from torch.utils.data import Dataset, DataLoader
 
-from .utils import video_collate_fn, load_decord
+import torch
+from pandas import read_parquet
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
+
+from .utils import load_decord, video_collate_fn
 
 
 class VideoMMEDataset(Dataset):
@@ -81,6 +81,8 @@ class VideoMMEDataset(Dataset):
 @torch.inference_mode
 def evaluate(
     model,
+    tokenizer,
+    image_processor,
     dataset_path: str,
     output_path: str,
     sample_config: dict,
@@ -106,19 +108,14 @@ def evaluate(
         )
         results = []
         for data in tqdm(dataloader):
-            messages = [[{
-                'role': 'user',
-                'content': f'<video>\n{question}\n{question_prompt}'
-            }] for question in data['text'][0]]
+            response = []
             images = data['video']
-            response, visual_embeds = model.chat(messages, images, max_new_tokens=100, do_sample=False, return_visual_embeds=True)
-            response = [response]
-            for i in range(1, len(data['text'])):
+            for i in range(len(data['text'])):
                 messages = [[{
                     'role': 'user',
                     'content': f'<video>\n{question}\n{question_prompt}'
                 }] for question in data['text'][i]]
-                response.append(model.chat(messages, visual_embeds=visual_embeds, max_new_tokens=100, do_sample=False))
+                response.append(model.chat(messages, images, tokenizer, image_processor, max_new_tokens=100, do_sample=False))
             response = [[response[i][j] for i in range(len(response))] for j in range(len(response[0]))]
             results.extend(response)
 

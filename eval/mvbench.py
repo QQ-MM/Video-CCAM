@@ -8,18 +8,18 @@
 @description: MVBench Evaluation
 ================================================
 """
-import os
-import cv2
 import json
-import torch
-import imageio
-import numpy as np
+import os
 import os.path as osp
 
-from PIL import Image
-from tqdm import tqdm
+import cv2
+import imageio
+import numpy as np
+import torch
 from decord import VideoReader, cpu
-from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 from .utils import video_collate_fn
 
@@ -197,6 +197,8 @@ class MVBenchDataset(Dataset):
 @torch.inference_mode
 def evaluate(
     model,
+    tokenizer,
+    image_processor,
     dataset_path: str,
     output_path: str,
     num_frames: int = 32,
@@ -227,7 +229,7 @@ def evaluate(
             'content': f'<video>\n{question}\n{question_prompt}'
         }] for question in data['question']]
         images = data['video']
-        response = model.chat(messages, images, max_new_tokens=100, do_sample=False)
+        response = model.chat(messages, images, tokenizer, image_processor, max_new_tokens=100, do_sample=False)
         for answer, task_type, predict in zip(data['answer'], data['task_type'], response):
             results[task_type].append(dict(
                 predict=predict,

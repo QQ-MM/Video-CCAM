@@ -8,15 +8,15 @@
 @description: VideoVista Evaluation
 ================================================
 """
-import os
 import json
-import torch
+import os
 import os.path as osp
 
+import torch
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from torch.utils.data import Dataset, DataLoader
 
-from .utils import video_collate_fn, load_decord
+from .utils import load_decord, video_collate_fn
 
 
 class VideoVistaDataset(Dataset):
@@ -87,6 +87,8 @@ class VideoVistaDataset(Dataset):
 @torch.inference_mode
 def evaluate(
     model,
+    tokenizer,
+    image_processor,
     dataset_path: str,
     output_path: str,
     sample_config: dict,
@@ -117,7 +119,7 @@ def evaluate(
             'content': f'<video>\n{question}\n{question_prompt}'
         }] for question in data['question']]
         images = data['video']
-        response = model.chat(messages, images, max_new_tokens=100, do_sample=False)
+        response = model.chat(messages, images, tokenizer, image_processor, max_new_tokens=100, do_sample=False)
         for answer, task_type, predict in zip(data['answer'], data['task_type'], response):
             results[task_type].append(dict(
                 predict=predict,

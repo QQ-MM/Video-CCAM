@@ -8,14 +8,13 @@
 @description: Utilities for video loading
 ================================================
 """
-
-import torch
-import pysubs2
 import os.path as osp
-
-from PIL import Image
 from typing import Any
+
+import pysubs2
+import torch
 from decord import VideoReader, cpu
+from PIL import Image
 from torch.utils.data import default_collate
 
 

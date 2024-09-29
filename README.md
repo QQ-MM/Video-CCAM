@@ -5,6 +5,8 @@
 
 ## Updates
 
+- **2024/09/29** [Video-CCAM-v1.2](https://huggingface.co/collections/JaronTHU/video-ccam-v12-66f9221c5144a8d0c6b9602a) has been released, featuring: 1. Enhanced performance on public benchmarks. 2. Support for Chinese. 3. Deployment with Gradio. Have a try!
+
 - **2024/08/28** The technical report is released.
 
 - **2024/08/22** [Video-CCAM-v1.1](https://huggingface.co/collections/JaronTHU/video-ccam-v11-66c7325edd01a54c939df48b) comes out, with better performances than Video-CCAM in many benchmarks, especially in [MVBench](https://github.com/OpenGVLab/Ask-Anything/blob/main/video_chat2/MVBENCH.md), [VideoVista](https://videovista.github.io/), and [MLVU](https://github.com/JUNJIE99/MLVU). The technical report is coming soon. The source code is rewritten for simpler deployment. If you are interested in previous scripts, please refer to the `v1.0` release.
@@ -29,7 +31,9 @@ Video-CCAM is a series of flexible Video-MLLMs developed by TencentQQ Multimedia
 
 Inference using Huggingface transformers on NVIDIA GPUs. Requirements tested on python 3.9/3.10.
 ```
-pip install -U pip torch transformers peft decord pysubs2 imageio
+pip install -U pip torch transformers accelerate peft decord pysubs2 imageio
+# flash attention support
+pip install flash-attn --no-build-isolation
 ```
 
 ## Inference
@@ -37,6 +41,7 @@ pip install -U pip torch transformers peft decord pysubs2 imageio
 ```
 import os
 import torch
+from huggingface_hub import snapshot_download
 from PIL import Image
 from transformers import AutoModel
 
@@ -44,15 +49,20 @@ from eval import load_decord
 
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
+# if you have downloaded this model, just replace the following line with your local path
+model_path = snapshot_download(repo_id='JaronTHU/Video-CCAM-7B-v1.2')
+
 videoccam = AutoModel.from_pretrained(
-    '<your_local_path_1>',
+    model_path,
     trust_remote_code=True,
     torch_dtype=torch.bfloat16,
-    device_map='auto',
-    _attn_implementation='flash_attention_2',
-    # llm_name_or_path='<your_local_llm_path>',
-    # vision_encoder_name_or_path='<your_local_vision_encoder_path>'
+    device_map='cuda:0',
+    attn_implementation='flash_attention_2'
 )
+
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+image_processor = AutoImageProcessor.from_pretrained(model_path)
 
 messages = [
     [
@@ -63,28 +73,43 @@ messages = [
     ], [
         {
             'role': 'user',
-            'content': '<video>\nDescribe this video in detail.'
+            'content': '<video>\n请仔细描述这个视频。'
         }
     ]
 ]
 
 images = [
-    Image.open('assets/example_image.jpg').convert('RGB'),
+    [Image.open('assets/example_image.jpg').convert('RGB')],
     load_decord('assets/example_video.mp4', sample_type='uniform', num_frames=32)
 ]
 
-response = videoccam.chat(messages, images, max_new_tokens=512, do_sample=False)
+response = videoccam.chat(messages, images, tokenizer, image_processor, max_new_tokens=512, do_sample=False)
 
 print(response)
 ```
 
 Please refer to `tutorial.ipynb` for more details.
 
+## Demo
+
+To launch a Gradio demo locally, please first install `gradio`:
+```
+pip install gradio
+```
+Then run the following command:
+```
+python web_demo.py --model_path <your_local_path>
+```
+
+The demo is shown in the following figure. You can change the generation configuration (max_new_tokens, temperature, top_k, ...) and the video sampling configuration in the left panels.
+
+![Gradio](assets/gradio_demo.png)
+
 ## Leaderboards
 
 ### MVBench
 
-![MVBench](assets/mvbench_leaderboard_20240826.png)
+![MVBench](assets/mvbench_leaderboard_20240929.png)
 
 ### VideoVista
 
@@ -101,7 +126,7 @@ Please refer to `tutorial.ipynb` for more details.
 ## Acknowledgement
 
 * [xtuner](https://github.com/InternLM/xtuner): Video-CCAM is trained using the xtuner framework. Thanks for their excellent works!
-* [Phi-3-mini-4k-instruct](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct): Powerful language models developed by Microsoft.
+* [Phi-3-mini-4k-instruct](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct), [Phi-3.5-mini-instruct](https://huggingface.co/microsoft/Phi-3.5-mini-instruct), and [Phi-3-medium-4k-instruct](https://huggingface.co/microsoft/Phi-3-medium-4k-instruct): Powerful language models developed by Microsoft.
+* [Qwen2.5-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct): Excellent language models developed by Alibaba Cloud.
 * [Yi-1.5-9B-Chat](https://huggingface.co/01-ai/Yi-1.5-9B-Chat): Powerful language models developed by [01.AI](https://www.lingyiwanwu.com/).
-* [Phi-3-medium-4k-instruct](https://huggingface.co/microsoft/Phi-3-medium-4k-instruct): Powerful language models developed by Microsoft.
 * [SigLIP SO400M](https://huggingface.co/google/siglip-so400m-patch14-384): Outstanding vision encoder developed by Google.
