@@ -43,7 +43,7 @@ import os
 import torch
 from huggingface_hub import snapshot_download
 from PIL import Image
-from transformers import AutoModel
+from transformers import AutoImageProcessor, AutoModel, AutoTokenizer
 
 from eval import load_decord
 
